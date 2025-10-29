@@ -14,15 +14,14 @@ from email.message import EmailMessage
 import ssl
 import smtplib
 from credentials import gmailUser, gmailPassword, gmailReceiver
-
-
+from telegram_notifier import sendTelegramMessage
 
 def initializateDriver():
     service = Service(ChromeDriverManager().install())
 
     option = webdriver.ChromeOptions()
     option.add_argument("--log-level=1")
-    #option.add_argument("--window-size=1920,1080")
+    option.add_argument("--window-size=1920,1080")
     option.add_argument("--headless") # Doesn't show the window
 
     driver = Chrome(service = service, options = option)
@@ -32,7 +31,7 @@ def initializateExcel():
     workbook = xlsxwriter.Workbook('data_export.xlsx')
     worksheet = workbook.add_worksheet(name="New")
     return worksheet, workbook
-
+    
 def setGrades(worksheet, listGrades):
     setHeader(worksheet)
 
@@ -63,11 +62,18 @@ def getExcelList():
 
     return excelList
 
-def sendEmail():
+def sendViaEmailOrTelegram(viaEmail, message):
+    if viaEmail:
+        # Send an alert via Email
+        sendEmail(f"{message}")
+    else:
+        # Send an alert via Telegram bot
+        sendTelegramMessage(f"{message}")
+
+def sendEmail(isUpdated):
     # Create message
-    subject = "Grades updated!!! =)"
-    body = """Check out now.
-"""
+    subject = f"Grades {isUpdated}"
+    body = f"""Check out now."""
 
     # Initiliazate object and properties
     email = EmailMessage()
@@ -136,16 +142,41 @@ def main():
     # Get a base list from Excel with grades. This is a starting point to start comparing
     excelList = getExcelList()
 
-    if listGrades != excelList:
-        print("Grades updated!")
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+    idSubject = {
+        "AEC1034": "Fundamentos de Telecomunicaciones",
+        "SCC1010": "Graficación",
+        "SCD1016": "Lenguajes y Automátas 2",
+        "SCD1022": "Simulación",
+        "AEC1061": "Sistemas Operativos",
+        "SCC1023": "Sistemas Programables",
+        "ACD0908": "Desarrollo Sustentable",
+        "AEF1031": "Fundamentos de Bases de Datos",
+        "LED1904": "Lengua Extranjera IV",
+        "SCC1019": "Programación Lógica y Funcional",
+        "SCD1021": "Redes de Computadoras",
+        "ACA0909": "Taller de Investigación I",
+        "SCA1026": "Taller de Sistemas Operativos"
+    }
 
+    for i in range(0, len(excelList), 13):
+        word = excelList[i]
+        excelList[i] = idSubject[word[1:8]]
+
+    for i in range(0, len(listGrades), 13):
+        word = listGrades[i]
+        listGrades[i] = idSubject[word[1:8]]
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+
+    if listGrades != excelList:
         # Update new grades
         worksheet, workbook = initializateExcel()
         setGrades(worksheet, listGrades)
         workbook.close()
-        
-        # Send an alert
-        sendEmail()
+
+        sendViaEmailOrTelegram(False, "updated!!! ✅")
+    else:
+        sendViaEmailOrTelegram(False, "not updated ❌")
 
     driver.quit()
 
