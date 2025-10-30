@@ -190,7 +190,6 @@ def main():
 
             for j, (old, new) in enumerate(zip(oldGrade, newGrade)):
                 if old != new:
-                    print("Hi")
                     # Update new grades
                     worksheet, workbook = initializateExcel()
                     setGrades(worksheet, listGrades)
