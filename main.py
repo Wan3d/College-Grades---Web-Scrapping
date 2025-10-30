@@ -182,36 +182,24 @@ def main():
     # Converts both lists to dictionary type
     dicOldGrades = listToDictionary(excelList)
     dicNewGrades = listToDictionary(listGrades)
-
-    # Looks up if any grade has been changed
-    for subject, newGrade in dicNewGrades.items():
-        if subject in dicOldGrades:
-            oldGrade = dicOldGrades[subject]
-
-            for j, (old, new) in enumerate(zip(oldGrade, newGrade)):
-                if old != new:
-                    print("Hi")
-                    # Update new grades
-                    worksheet, workbook = initializateExcel()
-                    setGrades(worksheet, listGrades)
-                    workbook.close()
-
-                    sendViaEmailOrTelegram(False, 
-                                        f"Materia -> {subject}\nUnidad ->  {j + 1}\nCalificación -> {new}")
     
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
 
-    '''
     if listGrades != excelList:
         # Update new grades
         worksheet, workbook = initializateExcel()
         setGrades(worksheet, listGrades)
         workbook.close()
 
-        sendViaEmailOrTelegram(False, "updated!!! ✅")
-    else:
-        sendViaEmailOrTelegram(False, "not updated ❌")
-    '''
+        # Looks up for changes
+        for subject, newGrade in dicNewGrades.items():
+            if subject in dicOldGrades:
+                oldGrade = dicOldGrades[subject]
+
+                for j, (old, new) in enumerate(zip(oldGrade, newGrade)):
+                    if old != new:
+                        sendViaEmailOrTelegram(False, 
+                                        f"Materia -> {subject}\nUnidad ->  {j + 1}\nCalificación -> {new}")
 
     driver.quit()
 
