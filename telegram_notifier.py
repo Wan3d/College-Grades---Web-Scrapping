@@ -7,7 +7,7 @@ def sendTelegramMessage(isUpdated):
     print(requests.get(urlTokenBot).json())'''
 
     # Set message and URL where is headed the message
-    message = f'Grades {isUpdated}'
+    message = f'{isUpdated}'
     urlSendMessage = f"https://api.telegram.org/bot{tokenBot}/sendMessage?chat_id={chatID}&text={message}"
 
     # Send it

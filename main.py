@@ -16,6 +16,7 @@ import smtplib
 from credentials import gmailUser, gmailPassword, gmailReceiver
 from telegram_notifier import sendTelegramMessage
 
+
 def initializateDriver():
     service = Service(ChromeDriverManager().install())
 
@@ -90,6 +91,35 @@ def sendEmail(isUpdated):
         smtp.sendmail(gmailUser, gmailReceiver, email.as_string())
         print("Email sent succesfuly!")
 
+def listToDictionary(list):
+    # Creamos los datos que usaremos para nuestro diccionario
+    plainList = list
+    dictionaryGrades = {}
+    gradesBlock = 13
+
+    # Iteramos de 13 en 13, ya que principalmente buscaremos los nombres de la materia
+    # que se repiten cada 13 índices
+    for i in range(0, len(plainList), gradesBlock):
+        # Del bloque de la materia, se extraen 13 columnas de esa materia en específico
+        subjectBlock = plainList[i : i + 13]
+
+        # Se identifica el nombre de la materia
+        subjectKey = subjectBlock[0]
+
+        # Agarramos el bloque de calificaciones dentro de la materia
+        gradesBlock = subjectBlock[2:]
+
+        # En un diccionario, guardamos las calificaciones asociadas al nombre de la materia
+        dictionaryGrades[subjectKey] = gradesBlock
+    return dictionaryGrades
+
+def subjectName(id, list):
+    for i in range(0, len(list), 13):
+        word = list[i]
+        if word[1:8] in id:
+            list[i] = id[word[1:8]]
+    return list
+
 def main():
     driver = initializateDriver()
     driver.get(urlCollege)
@@ -143,31 +173,35 @@ def main():
     excelList = getExcelList()
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
-    idSubject = {
-        "AEC1034": "Fundamentos de Telecomunicaciones",
-        "SCC1010": "Graficación",
-        "SCD1016": "Lenguajes y Automátas 2",
-        "SCD1022": "Simulación",
-        "AEC1061": "Sistemas Operativos",
-        "SCC1023": "Sistemas Programables",
-        "ACD0908": "Desarrollo Sustentable",
-        "AEF1031": "Fundamentos de Bases de Datos",
-        "LED1904": "Lengua Extranjera IV",
-        "SCC1019": "Programación Lógica y Funcional",
-        "SCD1021": "Redes de Computadoras",
-        "ACA0909": "Taller de Investigación I",
-        "SCA1026": "Taller de Sistemas Operativos"
-    }
 
-    for i in range(0, len(excelList), 13):
-        word = excelList[i]
-        excelList[i] = idSubject[word[1:8]]
+    from id_subject import idSubject
+    # Maps ID with subject namez
+    excelList = subjectName(idSubject, excelList)
+    listGrades = subjectName(idSubject, listGrades)
 
-    for i in range(0, len(listGrades), 13):
-        word = listGrades[i]
-        listGrades[i] = idSubject[word[1:8]]
+    # Converts both lists to dictionary type
+    dicOldGrades = listToDictionary(excelList)
+    dicNewGrades = listToDictionary(listGrades)
+
+    # Looks up if any grade has been changed
+    for subject, newGrade in dicNewGrades.items():
+        if subject in dicOldGrades:
+            oldGrade = dicOldGrades[subject]
+
+            for j, (old, new) in enumerate(zip(oldGrade, newGrade)):
+                if old != new:
+                    print("Hi")
+                    # Update new grades
+                    worksheet, workbook = initializateExcel()
+                    setGrades(worksheet, listGrades)
+                    workbook.close()
+
+                    sendViaEmailOrTelegram(False, 
+                                        f"Materia -> {subject}\nUnidad ->  {j + 1}\nCalificación -> {new}")
+    
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
 
+    '''
     if listGrades != excelList:
         # Update new grades
         worksheet, workbook = initializateExcel()
@@ -177,6 +211,7 @@ def main():
         sendViaEmailOrTelegram(False, "updated!!! ✅")
     else:
         sendViaEmailOrTelegram(False, "not updated ❌")
+    '''
 
     driver.quit()
 
